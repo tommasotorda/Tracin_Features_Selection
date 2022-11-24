@@ -1,9 +1,3 @@
-#!/usr/bin/env python
-# coding: utf-8
-
-# In[1]:
-
-
 import numpy as np
 import os
 import os
@@ -16,31 +10,15 @@ import matplotlib.pyplot as plt
 import tensorflow as tf
 from tensorflow import keras
 import random
-
-
-# In[2]:
-
-
 from sklearn.preprocessing import LabelEncoder
 from sklearn.utils import shuffle
-
-
-# In[4]:
-
-
 from dltk.io.augmentation import *
 from dltk.io.preprocessing import *
 from scipy.ndimage.filters import gaussian_filter
 import SimpleITK as sitk
 
 
-# In[5]:
-
-
 file_list = glob(os.path.join("/home/tordatom/Dati_Imaging/BraTs_19/MICCAI_BraTS_2019_Data_Training/HGG", "*", ""))
-
-
-# In[6]:
 
 
 def load_example(file_list):
@@ -62,7 +40,6 @@ def load_example(file_list):
     return channels, seg
 
 
-# In[7]:
 
 
 def normalize(t1):
@@ -72,7 +49,6 @@ def normalize(t1):
     return t1
 
 
-# In[10]:
 
 
 def elastic_transform1(image1,image2, alpha, sigma):
@@ -102,8 +78,6 @@ def elastic_transform1(image1,image2, alpha, sigma):
     return transformed_image1, transformed_image2
 
 
-# In[ ]:
-
 
 #The 3D RMI is transformed into a batch of 2D images 
 
@@ -115,14 +89,9 @@ def Twod(channels):
     return new
 
 
-# In[11]:
-
 
 from sklearn.model_selection import train_test_split
 train_to_test_ratio=0.8
-
-
-# In[12]:
 
 
 channels1, seg1 = load_example(file_list)
@@ -136,8 +105,6 @@ seg[seg == 4] = 3
 seg = keras.utils.to_categorical(seg)
 
 
-# In[14]:
-
 
 X_train,X_test,Y_train,Y_test=train_test_split(np.array(channels),
                                                np.array(seg),train_size=train_to_test_ratio,
@@ -146,9 +113,6 @@ X_train,X_test,Y_train,Y_test=train_test_split(np.array(channels),
 X_train, Y_train = Twod(X_train),  Twod(Y_train)
 X_test, Y_test = Twod(X_test), Twod(Y_test)
             
-
-
-# In[62]:
 
 
 X = X_train
@@ -162,28 +126,10 @@ for i in range(5):
 X_train = X
 Y_train = Y
 
-
-# In[15]:
-
-
 BATCH = 1
-
-
-# In[35]:
-
-
 os.mkdir("/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin")
-
-
-# In[ ]:
-
-
 os.mkdir('DataCgan/Train')
 os.mkdir('DataCgan/Test')
-
-
-# In[36]:
-
 
 for i in np.arange(0,X_train.shape[0], BATCH):
     
@@ -197,9 +143,6 @@ for i in np.arange(0,X_train.shape[0], BATCH):
         
 
 
-# In[16]:
-
-
 for i in np.arange(0,X_test.shape[0], BATCH):
     
     file_name_test = 'Test_{0}'.format(i//BATCH)
@@ -210,8 +153,6 @@ for i in np.arange(0,X_test.shape[0], BATCH):
     np.savez(os.path.join('/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin_test' , file_name_test),
              X_test = X_test[i:i+BATCH], Y_test = Y_test[i:i+BATCH])
 
-
-# In[ ]:
 
 
 for i in np.arange(0,X_test.shape[0], BATCH):
@@ -225,29 +166,4 @@ for i in np.arange(0,X_test.shape[0], BATCH):
     np.savez(os.path.join('Data/Test' , file_name_test), X_test = X_test[i:i+BATCH], Y_test = Y_test[i:i+BATCH])
         
 
-
-# In[ ]:
-
-
-with np.load("Data/Train/Train_0.npz") as data:
-
-    X=np.array(data["X_train"])
-    Y=np.array(data["Y_train"])
-
-
-# In[ ]:
-
-
-X_train.shape, Y_train.shape
-
-
-# In[ ]:
-
-
-files = glob('Data/Train/*')
-for f in files:
-    os.remove(f)
-files = glob('Data/Test/*')
-for f in files:
-    os.remove(f)
 
