@@ -30,7 +30,7 @@ search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/gradients/test
 os.chdir(search_dir)
 file_list_gradtest = filter(os.path.isfile, os.listdir(search_dir))
 file_list_gradtest = [os.path.join(search_dir, f) for f in file_list_gradtest] # add path to each file
-file_list_gradtest.sort(key=lambda x: os.path.getmtime(x))
+file_list_gradtest.sort(key=lambda x: os.path.getmtime(x)) #open file in the order of creation
 
 
 search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin/"
@@ -174,8 +174,8 @@ np.save("/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Radiomic_Features/s
 tracin_score = np.load("/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Radiomic_Features/score_dice1.npy",allow_pickle='TRUE').item()
 
 #we sort the tracin score and took the first, and last 20 example as proponents and opponents
-proponents_score = [sorted(b[i].items(), key=lambda x: x[1], reverse = True) for i in range(len(tracin_score))][:20]
-opponents_score = [sorted(b[i].items(), key=lambda x: x[1]) for i in range(len(tracin_score))][:20]
+proponents_score = [sorted(tracin_score[i].items(), key=lambda x: x[1], reverse = True) for i in range(len(tracin_score))][:20]
+opponents_score = [sorted(tracin_score[i].items(), key=lambda x: x[1]) for i in range(len(tracin_score))][:20]
 
 
 #extract the index of the examples
@@ -251,32 +251,15 @@ os.mkdir("/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/dice
 
 #we plot the opponents and proponents for a given test example, choosing the label that we want to monitoring.
 
-for i in range(70,len(proponents_index), 10):
-    print(f"proponents_for_test_{i}")
-    os.mkdir(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/dice3/proponents_of_test_{i}")
-    for index in proponents_index[i]: 
-        index = int(index)
-        channel = next(itertools.islice(train_dataset, map_train[index], map_train[index]+1))[1]
-        seg = next(itertools.islice(train_dataset, map_train[index], map_train[index]+1))[2]
-        plt.figure(figsize=(12, 8))
-        plt.subplot(131)
-        plt.title(f"Channel: 3, index: {index}")
-        plt.imshow(channel[0,:,:,3])
-        plt.subplot(132)
-        plt.title("Segmentation")
-        plt.imshow(np.argmax(seg[0], axis = 2))
-        plt.subplot(133)
-        plt.title("Pred Segmentation")
-        plt.imshow(np.argmax(model.predict(channel)[0], axis = 2))
-        plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/dice3/proponents_of_test_{i}/train_proponent_{index}")
-        plt.show()
-    if i == 110: break
 
 
-# In[ ]:
-
-
-for i in range(70,110, 10):
+for i in test:
+    print(f"------------test_{i}------------")
+    #try:
+    #    os.mkdir(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/totdice/proponents_of_test_{i}")
+    #    os.mkdir(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/totdice/opponents_of_test_{i}")
+    #except: 
+    #    pass
     channel = next(itertools.islice(test_dataset, map_test[i], map_test[i]+1))[1]
     seg = next(itertools.islice(test_dataset, map_test[i], map_test[i]+1))[2]
     plt.figure(figsize=(12, 8))
@@ -285,37 +268,63 @@ for i in range(70,110, 10):
     plt.imshow(channel[0,:,:,3])
     plt.subplot(132)
     plt.title("Segmentation")
-    plt.imshow(np.argmax(seg[0], axis = 2))
+    s = np.argmax(seg[0], axis = 2)
+    #s[s!=1] = 0
+    plt.imshow(s)
     plt.subplot(133)
     plt.title("Pred Segmentation")
-    plt.imshow(np.argmax(model.predict(channel)[0], axis = 2))
-    plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/test/test_example_{i}")
+    s_pred = np.argmax(model.predict(channel)[0], axis = 2)
+    #s_pred[s_pred!=1] = 0
+    plt.imshow(s_pred)
+    #plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/test/test_example_{i}.png")
     plt.show()
-
-
-# In[ ]:
-
-
-for i in range(70,len(opponents_index),10):
-    print(f"opponents_for_test_{i}")
-    os.mkdir(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/dice3/opponents_of_test_{i}")
-    for index in opponents_index[i]: 
-        index = int(index)
-        channel = next(itertools.islice(train_dataset, map_train[index], map_train[index]+1))[1]
-        seg = next(itertools.islice(train_dataset, map_train[index], map_train[index]+1))[2]
+    for j in range(3):
+        index = int(p[i][j])
+        channel = next(itertools.islice(train_dataset, map_train[index],
+                                        map_train[index]+1))[1]
+        seg = next(itertools.islice(train_dataset, map_train[index],
+                                    map_train[index]+1))[2]
         plt.figure(figsize=(12, 8))
+        print(f"------------proponent_{j}_for_test_{i}------------")
         plt.subplot(131)
-        plt.title(f"Channel: 3, index: {index}")
+        plt.title(f"Channel 3, index: {index}")
         plt.imshow(channel[0,:,:,3])
         plt.subplot(132)
         plt.title("Segmentation")
-        plt.imshow(np.argmax(seg[0], axis = 2))
+        s = np.argmax(seg[0], axis = 2)
+        #s[s!=1] = 0
+        plt.imshow(s)
         plt.subplot(133)
         plt.title("Pred Segmentation")
-        plt.imshow(np.argmax(model.predict(channel)[0], axis = 2))
-        plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/dice3/opponents_of_test_{i}/train_opponents_{index}")
+        s_pred = np.argmax(model.predict(channel)[0], axis = 2)
+        #s_pred[s_pred!=1] = 0
+        plt.imshow(s_pred)
+       # plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/totdice/proponents_of_test_{i}/train_proponent_{index}.png")
         plt.show()
-    if i == 110: break
+        
+        index = int(p[i][len(p[i])-j-1])
+        channel = next(itertools.islice(train_dataset, map_train[index],
+                                        map_train[index]+1))[1]
+        seg = next(itertools.islice(train_dataset, map_train[index],
+                                    map_train[index]+1))[2]
+
+        plt.figure(figsize=(12, 8))
+        print(f"------------opponent_{j}_for_test_{i}------------")
+        plt.subplot(131)
+        plt.title(f"Channel 3, index: {index}")
+        plt.imshow(channel[0,:,:,3])
+        plt.subplot(132)
+        plt.title("Segmentation")
+        s = np.argmax(seg[0], axis = 2)
+        #s[s!=1] = 0
+        plt.imshow(s)
+        plt.subplot(133)
+        plt.title("Pred Segmentation")
+        s_pred = np.argmax(model.predict(channel)[0], axis = 2)
+        #s_pred[s_pred!=1] = 0
+        plt.imshow(s_pred)
+       # plt.savefig(f"/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/Tracin_Images/totdice/opponents_of_test_{i}/train_opponent_{index}.png")
+        plt.show()
 
 
 
