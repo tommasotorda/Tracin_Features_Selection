@@ -29,7 +29,7 @@ in [Gradients.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Gradients.py) ca
 ## Radiomica
 infine vegono estratte le feature radiomiche tramite la libreria pyradiomics in [Radiomica.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Radiomica.py). Le feature radiomiche del train e test vengono normalizzate tramite zscore e poi ne viene fatto il prodotto. Questo nuovo oggetto è plottato in funzione della score di tracin. 
 
-## Caricamento del modello
+## Caricamento del modello e dati
 
 Per caricare il modello e i dati ci dobbiamo connettere al mio container ``tordatom``. Per il modello dobbiamo usare le custom loss:
 
@@ -75,7 +75,7 @@ model = tf.keras.models.load_model(file_list_ckpt[0],
                                                    'dice2': dice2, 'dice3': dice3,
                                                    "dice_loss1":dice_loss1})
 ```
-Per caricare i dati
+Per caricare i dati 
 
 ```
 def load_image_train(image_file):
@@ -95,6 +95,34 @@ def t_reshape(index, X,Y):
     X = tf.reshape(X, [192,192,4])
     Y = tf.reshape(Y, [192,192,4])
     return index,X,Y
+
+
+BATCH_SIZE = 1
+search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin/"
+os.chdir(search_dir)
+file_list_train = filter(os.path.isfile, os.listdir(search_dir))
+file_list_train = [os.path.join(search_dir, f) for f in file_list_train] # add path to each file
+file_list_train.sort(key=lambda x: os.path.getmtime(x))
+
+train_dataset = tf.data.Dataset.list_files(file_list_train, shuffle = False)
+train_dataset = train_dataset.map(lambda item: tf.numpy_function(
+          load_image_train, [item], [tf.int64, tf.double, tf.double]),
+          num_parallel_calls=tf.data.AUTOTUNE)
+train_dataset = train_dataset.map(test_reshape)
+train_dataset = train_dataset.batch(BATCH_SIZE)
+
+search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin_test/"
+os.chdir(search_dir)
+file_list_test = filter(os.path.isfile, os.listdir(search_dir))
+file_list_test = [os.path.join(search_dir, f) for f in file_list_test] # add path to each file
+file_list_test.sort(key=lambda x: os.path.getmtime(x))
+
+test_dataset = tf.data.Dataset.list_files(file_list_test, shuffle = False)
+test_dataset = test_dataset.map(lambda item: tf.numpy_function(
+          load_image_test, [item], [tf.int64, tf.double, tf.double]),
+          num_parallel_calls=tf.data.AUTOTUNE)
+test_dataset = test_dataset.map(test_reshape)
+test_dataset = test_dataset.batch(BATCH_SIZE)
 ```
 
 
