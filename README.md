@@ -145,6 +145,7 @@ ECE:
 # Esempio di prob
 
 ![Esempio 1](img/prob.png)
+![Esempio 1](img/prob2.png)
 
 
 
