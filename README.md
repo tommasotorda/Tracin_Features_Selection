@@ -125,6 +125,24 @@ test_dataset = test_dataset.map(test_reshape)
 test_dataset = test_dataset.batch(BATCH_SIZE)
 ```
 
+## Calibrazione
+
+Ho usato tre tecniche di calibrazione: Temperature Scaling (TS), Logistic Calibration (LC), Beta Calibration (BC). La cosa che cambia è la mappa di calibrazione (1 paramtero moltiplicativo, vettore, beta function). 
+
+ECE:
+|  |ECE| 
+| -----| ------ |
+|Non_cal |  0.349    |   
+|TS  |      0.125     |    
+|LC |     0.006   |  
+|BC |     0.002   | 
+
+![Esempio 1](img/Unet_non_cal.png)
+![Esempio 1](img/Temperature_Scaling.png)
+![Esempio 1](img/Logistic_Calibration.png)
+![Esempio 1](img/Beta_Calibration.png)
+
+
 
 
 
