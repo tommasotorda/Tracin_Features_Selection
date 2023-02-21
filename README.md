@@ -142,6 +142,9 @@ ECE:
 ![Esempio 1](img/Logistic_Calibration.png)
 ![Esempio 1](img/Beta_Calibration.png)
 
+# Esempio di prob
+
+![Esempio 1](img/prob.png)
 
 
 
