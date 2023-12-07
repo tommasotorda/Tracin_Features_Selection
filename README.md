@@ -1,152 +1,37 @@
-# Tracin vs Radiomica per BraTs19
+# Tracin in Semantic Segmentation of tumor brains in MRI, an extended approach
 
 
-## Descrizione
-**Task di Med-1**: xAI tool per applicazioni mediche, in particolare per segmentazione di cervelli in MRI.
+## Abstract
+In recent years, thanks to improved computational power and the availability of big data, AI has become a fundamental tool in basic research and industry. Despite this very rapid development, deep neural networks (DNN) remain black boxes that are difficult to explain. While a multitude of explainability (xAI) methods have been developed, their effectiveness and usefulness in realistic use cases are understudied. This is a major limitation in the application of these algorithms in sensitive fields such as clinical diagnosis, where the robustness, transparency and reliability of the algorithm are indispensable for its use. In addition, the majority of works have focused on feature attribution (e.g., saliency maps) techniques, neglecting other interesting families of xAI methods such as data influence methods as TracIn. The aim of this work is to implement, extend and test, for the first time, this data influence functions in a challenging clinical problem, namely, the segmentation of tumor brains in Magnetic Resonance Images (MRI). We present a new methodology to calculate TracIn that is generalizable for all semantic segmentation tasks where the different labels are mutually exclusive, which is the standard framework for these tasks. We also provide an interpretation map of the explanation, based on the cosine similarity between feature maps extracted from the neural network, which we use to prove the faithfulness of the algorithm with respect to the decision-making process of DNN. We show that TracIn can be used to make feature selection. The goodness of selection can then be evaluated on how the selected internal network kernels afflict the network prediction.
 
-**Dataset BraTs19**:
+
+## Dataset BraTs19:
 
 - **Channels**: a) native (T1) and b) post-contrast T1-weighted (T1Gd), c) T2-weighted (T2), and d) T2 Fluid Attenuated
 Inversion Recovery (T2-FLAIR) volumes.
 - **Label**: 1) the "enhancing tumor" (ET), 2) the "tumor core" (TC), and 3) the "whole tumor" (WT).
 
-Abbiamo utilizzato 259 scans di glioblastoma (HGG) tagliando il volume in slice bidimensionali lungo l’asse z (60 slice centrali
-per paziente).
+BraTS2019 utilizes multi-institutional pre-operative MRI scans. The training dataset is com- posed of 259 cases of high-grade gliomas (HGG) and 76 cases of low-grade gliomas (LGG), manually annotated by both clinicians and board-certified radiologists. For each patient, four MRI scans taken with different modalities are provided: T1, T1Gd, T2, T2-FLAIR. with an image’s shape of voxels 240 × 240 × 155. We focused only on HGG patients, dividing the dataset into 207 train patients and 52 validation patients
 
-La segmentazione è ottenuta tramite l'utilizzo di una [Unet2D](https://gitlab.com/mucca1/BraTs19/-/blob/main/Unet2D.py).
+## Neural Network
+To solve the segmentation task, we chose a popular and well-established neural network, the [Unet2D.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/Unet2D.ipynb) for 2D segmentation.
 
-Il metodo di xAI proposto  è basato su 2 distinti metodi: **TracIn** e le **Feature Radiomiche** estratte dalle immagini mediche.
 
 ## Preprocessing
-in [Preprocessing.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Preprocessing.py)vengono preparati i dati per il training. Vengono normalizzate le intensità tra [-1,1], si applicano trasformazioni elestiche sul dataset di train che richiedono l'utilizzo della CPU e si rende bidimensionale il dato. I pazienti vengono poi divisi in train e test e ogni MRI in 2D è salvata su un file separato.
+In [Preprocessing.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/Preprocessing.ipynb) data are prepared for training. The intensities are normalised between [-1,1] and the data are made two-dimensional. The patients are then divided into train and test and each 2D MRI is saved on a separate file.
 
-## Unet2D
-in [Unet2D.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Unet2D.py) viene definito il modello, una semplice Unet con l'aggiunta di BatchNorm in ogni blocco convolutivo. Viene applicata anche della dataugmentation semplice come random flip e crop. 
 
 ## Gradients and Tracin
-in [Gradients.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Gradients.py) calcoliamo i gradienti per test e train. Possiamo decidere se specializzare la spiegazione di Tracin per la loss function totale o per solo una determinata label, ecludendo ad esempio il background. I gradienti vengono poi salvati e caricati in [TracIn.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/TracIn.py), qui si estraggono proponenti e opponenti per ogni esempi di test. 
-
-## Radiomica
-infine vegono estratte le feature radiomiche tramite la libreria pyradiomics in [Radiomica.py](https://gitlab.com/mucca1/BraTs19/-/blob/main/Radiomica.py). Le feature radiomiche del train e test vengono normalizzate tramite zscore e poi ne viene fatto il prodotto. Questo nuovo oggetto è plottato in funzione della score di tracin. 
-
-## Caricamento del modello e dati
-
-Per caricare il modello e i dati ci dobbiamo connettere al mio container ``tordatom``. Per il modello dobbiamo usare le custom loss:
-
-```
-def dice0(y_true, y_pred, smooth = 1e-7):
-    y_true_f = tf.reshape(tf.cast(y_true[:,:,:,0], 'float32'), [len(y_true), -1]) 
-    y_pred_f = tf.reshape(tf.cast(y_pred[:,:,:,0], 'float32'), [len(y_true), -1])
-    return (2*tf.reduce_sum(tf.abs(y_true_f*y_pred_f), axis = 1))/(tf.reduce_sum(
-        y_true_f**2 + y_pred_f**2, axis = 1)+smooth)
-def dice1(y_true, y_pred, smooth = 1e-7):  
-    y_true_f = tf.reshape(tf.cast(y_true[:,:,:,1], 'float32'), [len(y_true), -1]) 
-    y_pred_f = tf.reshape(tf.cast(y_pred[:,:,:,1], 'float32'), [len(y_true), -1])
-    return (2*tf.reduce_sum(tf.abs(y_true_f*y_pred_f), axis = 1))/(tf.reduce_sum(
-        y_true_f**2 + y_pred_f**2, axis = 1)+smooth)
-
-def dice2(y_true, y_pred, smooth = 1e-7):
-    y_true_f = tf.reshape(tf.cast(y_true[:,:,:,2], 'float32'), [len(y_true), -1]) 
-    y_pred_f = tf.reshape(tf.cast(y_pred[:,:,:,2], 'float32'), [len(y_true), -1])
-    return (2*tf.reduce_sum(tf.abs(y_true_f*y_pred_f), axis = 1))/(tf.reduce_sum(
-        y_true_f**2 + y_pred_f**2, axis = 1)+smooth)
-
-def dice3(y_true, y_pred, smooth = 1e-7):  
-    y_true_f = tf.reshape(tf.cast(y_true[:,:,:,3], 'float32'), [len(y_true), -1]) 
-    y_pred_f = tf.reshape(tf.cast(y_pred[:,:,:,3], 'float32'), [len(y_true), -1])
-    return (2*tf.reduce_sum(tf.abs(y_true_f*y_pred_f), axis = 1))/(tf.reduce_sum(
-        y_true_f**2 + y_pred_f**2, axis = 1)+smooth)
-
-def dice_loss(y_true, y_pred):
-    a0 = 0
-    a1 = 1
-    a2 = 1
-    a3 = 1
-    return 1-(a0*dice0(y_true,y_pred)+a1*dice1(y_true,y_pred)+a2*dice2(
-        y_true,y_pred)+a3*dice3(y_true,y_pred))/(a0+a1+a2+a3)
-```
-Prendiamo poi i checkpoint e carichiamo il modello
-```
-file_list_ckpt = glob(os.path.join(checkpoint_dir, "*"))
-file_list_ckpt.sort()
-
-model = tf.keras.models.load_model(file_list_ckpt[0], 
-                                   custom_objects={'dice0': dice0, 'dice1': dice1, 
-                                                   'dice2': dice2, 'dice3': dice3,
-                                                   "dice_loss1":dice_loss1})
-```
-Per caricare i dati 
-
-```
-def load_image_train(image_file):
-    data = np.load(image_file)
-    index = int(image_file[69:len(image_file)-4])
-    return index, data['X_train'], data['Y_train']
-
-def load_image_test(image_file):
-    data = np.load(image_file)
-    index = int(image_file[73:len(image_file)-4])
-    return index, data['X_test'], data['Y_test']
+In [Gradients.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/Gradients.ipynb) we calculate the gradients for test and train. We can decide whether to specialise Tracin's explanation for the total loss function or for only a certain label, e.g. excluding the background. The gradients are then saved and loaded into [TracIn.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/TracIn.ipynb), here, proponents and opponents are extracted for each test example. 
 
 
-def t_reshape(index, X,Y):
-    X = tf.cast(X, tf.float32)
-    Y = tf.cast(Y, tf.float32)
-    X = tf.reshape(X, [192,192,4])
-    Y = tf.reshape(Y, [192,192,4])
-    return index,X,Y
 
+## Feature maps
 
-BATCH_SIZE = 1
-search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin/"
-os.chdir(search_dir)
-file_list_train = filter(os.path.isfile, os.listdir(search_dir))
-file_list_train = [os.path.join(search_dir, f) for f in file_list_train] # add path to each file
-file_list_train.sort(key=lambda x: os.path.getmtime(x))
+In [Vis_filter.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/Vis_filter.ipynb) feature maps are extracted from the train and test examples. These features are extracted only from the pixels belonging to a certain tumour class and are extracted taking into consideration only the penultimate layer of the network. In total, we have 64 filters to analyse for each of the 3 tumour labels.Here is also the evaluation of the goodness of the feature selection.
 
-train_dataset = tf.data.Dataset.list_files(file_list_train, shuffle = False)
-train_dataset = train_dataset.map(lambda item: tf.numpy_function(
-          load_image_train, [item], [tf.int64, tf.double, tf.double]),
-          num_parallel_calls=tf.data.AUTOTUNE)
-train_dataset = train_dataset.map(test_reshape)
-train_dataset = train_dataset.batch(BATCH_SIZE)
-
-search_dir = "/home/tordatom/Dati_Imaging/BraTs_19/Segmentation2D/DataTracin_test/"
-os.chdir(search_dir)
-file_list_test = filter(os.path.isfile, os.listdir(search_dir))
-file_list_test = [os.path.join(search_dir, f) for f in file_list_test] # add path to each file
-file_list_test.sort(key=lambda x: os.path.getmtime(x))
-
-test_dataset = tf.data.Dataset.list_files(file_list_test, shuffle = False)
-test_dataset = test_dataset.map(lambda item: tf.numpy_function(
-          load_image_test, [item], [tf.int64, tf.double, tf.double]),
-          num_parallel_calls=tf.data.AUTOTUNE)
-test_dataset = test_dataset.map(test_reshape)
-test_dataset = test_dataset.batch(BATCH_SIZE)
-```
-
-## Calibrazione
-
-Ho usato tre tecniche di calibrazione: Temperature Scaling (TS), Logistic Calibration (LC), Beta Calibration (BC). La cosa che cambia è la mappa di calibrazione (1 paramtero moltiplicativo, vettore, beta function). 
-
-ECE:
-|  |ECE| 
-| -----| ------ |
-|Non_cal |  0.349    |   
-|TS  |      0.125     |    
-|LC |     0.006   |  
-|BC |     0.002   | 
-
-![Esempio 1](img/Unet_non_cal.png)
-![Esempio 1](img/Temperature_Scaling.png)
-![Esempio 1](img/Logistic_Calibration.png)
-![Esempio 1](img/Beta_Calibration.png)
-
-# Esempio di prob
-
-![Esempio 1](img/prob.png)
-![Esempio 1](img/prob2.png)
-
+## Consistency tests
+In [consistency_tests.ipynb](https://gitlab.com/mucca1/BraTs19/-/blob/main/consistency_tests.ipynb.ipynb) consistency tests are evaluated. The self-influence matrix, robustness and cross-validation tests and finally the feature selection on the basis of the Tracin score are reported.
 
 
 
