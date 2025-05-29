@@ -30,7 +30,7 @@ The core idea is to understand which training samples most influenced a particul
         `T_i,j = Σ_t η_t ∇L(θ_t, z'_i) ⋅ ∇L(θ_t, z_j)` (simplified representation).
 3.  **Local Explanation:** By sorting `T_i,j` scores, the most influential proponents (high positive `T_i,j`) and opponents (high negative `T_i,j`) from the training set are identified for each segmented region in the test image.
 
-![TracIn evaluation](tracin.png)
+![TracIn evaluation](img/tracin.png)
 
 4.  **Interpretative Maps & Global Explanation (Feature Importance):**
     *   Feature maps are extracted from the last hidden layer of the segmentation network for both test and training examples.
@@ -39,8 +39,8 @@ The core idea is to understand which training samples most influenced a particul
     *   Plotting `FI` against the rank of proponents/opponents reveals features that consistently contribute positively (predictive features) or negatively to the model's decision for specific classes.
 
 
-![Feature importance](method.png)
+![Feature importance](img/method.png)
 
 5.  **Faithfulness Metric:** The impact of identified important features is quantified by measuring the drop in Dice score when these features are ablated (e.g., by masking corresponding filters in the last hidden layer).
 
-![Results](results.png)
+![Results](img/results.png)
